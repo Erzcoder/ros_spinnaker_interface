@@ -12,6 +12,7 @@ import sys
 import time
 import pydoc
 from std_msgs.msg import Int64
+from spinn_ros_msgs.msg import Pop_List
 from multiprocessing import Process, Queue, Lock
 from itertools import count
 
@@ -30,9 +31,9 @@ class _ROS_Spinnaker_Interface(object):
     """
     Transform incoming ROS Messages into spikes and inject them into the Spinnaker Board and the other way round.
 
-
+a
     Args:
-
+b
     n_neurons_source (int):  The number of neurons of the Spike Source.
 
     transfer_function_send (function handle): A handle to the transfer function used to convert
@@ -112,14 +113,19 @@ class _ROS_Spinnaker_Interface(object):
         self.n_neurons = n_neurons_source if n_neurons_source is not None else 1
         self._Spike_Source_Class = Spike_Source_Class
         self._Spike_Sink_Class = Spike_Sink_Class
+
+        self.interface_id = self._instance_counter.next()
+
         self._output_population = output_population
+
+
         self.send_topic = ros_topic_send
         self.recv_topic = ros_topic_recv
         self._clk_rate = clk_rate  # in Hz
         self._ros_output_rate = ros_output_rate  # Hz
         self._benchmark = benchmark
 
-        self.interface_id = self._instance_counter.next()
+        
 
         self._injector_label = 'injector{}'.format(self.interface_id)
         spike_injector_port = 12345 + self.interface_id
@@ -170,6 +176,12 @@ class _ROS_Spinnaker_Interface(object):
         """
         timestep = 1.0 / self._clk_rate * 1000
 
+        #if the readout population consists of more than one neuron -> set the readout_pop flag
+        if self._output_population.size > 1:
+            self._readout_pop_flag = True
+            print('**********readout_flag_activated*************'.format(self.interface_id))
+        
+
         if self.sender_active:
             self._spike_source = self._Spike_Source_Class(self.n_neurons,
                                                           label,
@@ -200,10 +212,16 @@ class _ROS_Spinnaker_Interface(object):
         """
         rospy.init_node('spinnaker_ros_interface{}'.format(self.interface_id), anonymous=True)
 
-        if self.receiver_active:
-            publisher = rospy.Publisher(self.recv_topic, Int64, queue_size=10)
-        if self.sender_active:
-            rospy.Subscriber(self.send_topic, Int64, self._incoming_ros_package_callback)
+        if self._readout_pop_flag:
+            if self.receiver_active:
+                publisher = rospy.Publisher(self.recv_topic, Pop_List, queue_size=10)
+            if self.sender_active:
+                rospy.Subscriber(self.send_topic, Int64, self._incoming_ros_package_callback)
+        else:
+            if self.receiver_active:
+                publisher = rospy.Publisher(self.recv_topic, Int64, queue_size=10)
+            if self.sender_active:
+                rospy.Subscriber(self.send_topic, Int64, self._incoming_ros_package_callback)
 
         rospy.on_shutdown(self.on_ros_node_shutdown)
 
