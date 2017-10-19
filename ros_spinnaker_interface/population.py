@@ -6,6 +6,11 @@
 @author Stephan Reith
 @date 	02.08.2016
 
+
+Changes for neural population support
+@author Nicolas Berberich
+@date   10.09.2017
+
 Spike Source for the ROS-Spinnaker-Interface
 '''
 

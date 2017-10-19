@@ -4,6 +4,10 @@
 @author Stephan Reith
 @date 	13.07.2016
 
+Changes for neural population support
+@author Nicolas Berberich
+@date   10.09.2017
+
 '''
 
 import rospy

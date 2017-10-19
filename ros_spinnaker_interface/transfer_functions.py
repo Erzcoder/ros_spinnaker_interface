@@ -2,6 +2,19 @@
 # -*- coding: utf-8 -*-
 
 
+'''
+@file   spike_source.py
+@author Stephan Reith
+@date   02.08.2016
+
+
+Changes for neural population support
+@author Nicolas Berberich
+@date   10.09.2017
+
+Spike Source for the ROS-Spinnaker-Interface
+'''
+
 """
 The transfer functions (actually classes) define simple transformations, from incoming ROS values to the injected
 live spikes or from observed spikes in ROS live output.
@@ -109,6 +122,32 @@ class SpikeSourceConstantRate(BasicSpikeSource):
         rate = ros_value
         return rate
 
+class SpikeSourcePoissonRefrac(BasicSpikeSource):
+    """
+    Generate a Poisson Spike Train for each neuron, with the ros input being the lambda.
+
+    More Information why this results in a poisson spike train at
+    http://www.cns.nyu.edu/~david/handouts/poisson.pdf, Chapter: Generating Poisson Spike Trains
+    """
+    abs_refrac = 1 # ms
+    intervals = []
+
+    def on_update(self, ros_value, neuron, n_neurons):
+        # random.seed(10)
+        global abs_refrac
+
+        if ros_value is None or ros_value <= 0:
+            return None
+
+        lambd = ros_value
+        interval=0
+
+        # draw from the distribution until a value larger than abs_refrac is found
+        while interval < abs_refrac:
+            interval = int(random.expovariate(lambd))
+            self.intervals.append((interval, neuron))
+        return interval
+
 
 class SpikeSourcePoisson(BasicSpikeSource):
     """
@@ -125,8 +164,10 @@ class SpikeSourcePoisson(BasicSpikeSource):
         if ros_value is None or ros_value <= 0:
             return None
 
-        lambd = ros_value
-        interval = int(random.expovariate(1.0/lambd))
+        lambd = ros_value # ros_value is the instantaneous firing rate
+        interval = int(random.expovariate(lambd))
+        if interval=0:
+            interval=1
         self.intervals.append((interval, neuron))
         return interval
 
@@ -272,6 +313,8 @@ class SpikeSinkMultipleReadoutsConvolution(BasicSpikeSink):
 
     #global last_spike_times
     #last_spike_times = np.ones((10,)) # do this as self?
+
+    # global keyword only needed in functions; outside standard initialization is enough
     global last_rate
     last_rate=0
     global init_flag
@@ -293,6 +336,7 @@ class SpikeSinkMultipleReadoutsConvolution(BasicSpikeSink):
         # get the spike history of the spiking neuron
         if pop_last_spike_times is None:
             pop_last_spike_times=np.ones((n_neurons,10))
+            
 
         last_spike_times=pop_last_spike_times[neuron_id]
 
