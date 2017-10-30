@@ -1,17 +1,18 @@
 # ROS Spinnaker Interface
 Connect SpiNNaker with ROS and use transfer functions to convert between live spikes and ROS values.
 
-This project is part of my Bachelor Thesis SpiNNaker ROS Integration at the Chair of Neuroscientific System Theory of the Technical University of Munich.
+This project has been started at the Chair of Neuroscientific System Theory of the Technical University of Munich by Stephan Reith and has been modified by Nicolas Berberich.
 
-Transform incoming ROS Messages into spikes and inject them into the Spinnaker Board and the other way round.
+**Transform incoming ROS Messages into spikes and inject them into the Spinnaker Board and the other way round.**
 
 
 # Requirements and Installation
 To run this interface you will need ROS and the Spinnaker Software, including the SpyNNakerExternalDevicesPlugin.
 For Spinnaker, have a look at the PyNN on SpiNNaker Installation Guide on http://spinnakermanchester.github.io. 
-You have to install sPyNNaker 3.0.0. 
+You have to install sPyNNaker 3.0.0. The interface has not yet been tested with sPyNNaker 4.0.0. 
 
-Also you will need a working ROS distribution, including rospy.
+Also you will need a working ROS distribution, including rospy. 
+The code has been tested with the Kinetic-Kame ROS distribution on a Ubuntu 16.04 (Xenial) machine, but other combinations might work as well. 
 
 This package is not yet published on PyPI, but you can simply install it using the following command.
 
@@ -19,12 +20,25 @@ This package is not yet published on PyPI, but you can simply install it using t
 
 I highly recommend using a virtual python environment. Make sure rospy and all other python packages are linked correctly.
 
+# Supported ROS-message types:
+std_msgs/Int64: 
+
+This message type contains the **data**-field which can hold 64-bit integer values.
+
+spinn_ros_msgs/Pop_List:
+
+This message type contains the **neuron_pop**-field which can hold an array of 32-bit integer values. 
+	
+You can get this ROS-message at:
+	https://github.com/Erzcoder/spinn_ros_msgs
+
+
+
 
 # Notes
 This is work in progress, please tell me if any errors occur. 
 
-Possible improvements could be manual timesteps in the base spike source / sink, like in spinnaker.
-A more flexible way to change the ros message type would also be nice. The biggest problem here is the hardcoding of the message data field.
+Possible improvements could be manual time-steps in the base spike source / sink, like in spinnaker.
 
 
 # Documentation
