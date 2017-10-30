@@ -91,7 +91,7 @@ class BasicSpikeSource(object):
 class BasicSpikeSink(object):
     
     """
-    Please inherit from this class and implement the on_spike and on_update methods.
+    The spike sink classes in transfer_functions.py inherit from this class and implement the on_spike and on_update methods.
     """
     
 
@@ -142,7 +142,9 @@ class BasicSpikeSink(object):
         global new_ros_value
         
 
+
         if self._readout_pop_flag:
+            # For multi-neuron output populations
 
             if not self._q.empty():
                 spike = self._q.get()
@@ -158,6 +160,9 @@ class BasicSpikeSink(object):
                 #print(new_ros_value)
                 self._ros_value = new_ros_value if new_ros_value is not None else self._ros_value
         
+
+                # TODO: add on_update
+
                 '''
             self._call_counter += 1
 

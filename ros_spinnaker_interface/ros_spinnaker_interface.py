@@ -180,7 +180,7 @@ b
         """
         timestep = 1.0 / self._clk_rate * 1000
 
-        #if the readout population consists of more than one neuron -> set the readout_pop flag
+        # If the readout population consists of more than one neuron -> set the readout_pop flag
         if self._output_population.size > 1:
             self._readout_pop_flag = True
             print('**********readout_flag_activated*************'.format(self.interface_id))
@@ -216,6 +216,7 @@ b
         """
         rospy.init_node('spinnaker_ros_interface{}'.format(self.interface_id), anonymous=True)
 
+        # If the readout_pop_flag is active, use the Pop_List ROS-message type for the output topic
         if self._readout_pop_flag:
             if self.receiver_active:
                 publisher = rospy.Publisher(self.recv_topic, Pop_List, queue_size=10)

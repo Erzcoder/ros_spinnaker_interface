@@ -122,32 +122,6 @@ class SpikeSourceConstantRate(BasicSpikeSource):
         rate = ros_value
         return rate
 
-class SpikeSourcePoissonRefrac(BasicSpikeSource):
-    """
-    Generate a Poisson Spike Train for each neuron, with the ros input being the lambda.
-
-    More Information why this results in a poisson spike train at
-    http://www.cns.nyu.edu/~david/handouts/poisson.pdf, Chapter: Generating Poisson Spike Trains
-    """
-    abs_refrac = 1 # ms
-    intervals = []
-
-    def on_update(self, ros_value, neuron, n_neurons):
-        # random.seed(10)
-        global abs_refrac
-
-        if ros_value is None or ros_value <= 0:
-            return None
-
-        lambd = ros_value
-        interval=0
-
-        # draw from the distribution until a value larger than abs_refrac is found
-        while interval < abs_refrac:
-            interval = int(random.expovariate(lambd))
-            self.intervals.append((interval, neuron))
-        return interval
-
 
 class SpikeSourcePoisson(BasicSpikeSource):
     """
@@ -166,7 +140,7 @@ class SpikeSourcePoisson(BasicSpikeSource):
 
         lambd = ros_value # ros_value is the instantaneous firing rate
         interval = int(random.expovariate(lambd))
-        if interval=0:
+        if interval=0:  # the interval can't be 0 because then the spike would be suppressed. 
             interval=1
         self.intervals.append((interval, neuron))
         return interval
@@ -178,6 +152,34 @@ class SpikeSourcePoisson(BasicSpikeSource):
         plt.hist(data, bins=range(min(data), max(data) + binwidth, binwidth))
         plt.title('Interspike Intervals Over Time Of Neuron 1')
         plt.show()
+
+
+class SpikeSourcePoissonRefrac(BasicSpikeSource):
+    """
+    Generate a Poisson Spike Train for each neuron, with the ros input being the lambda.
+    After a neuron has spiked, it cannot elicit another action potential for the duration of the absolute refractory period
+
+    
+    """
+    # Absolute refractory period: 
+    abs_refrac = 1 # ms # TODO: adjust to non-standard simulation step size
+    intervals = []
+
+    def on_update(self, ros_value, neuron, n_neurons):
+        # random.seed(10)
+        global abs_refrac
+
+        if ros_value is None or ros_value <= 0:
+            return None
+
+        lambd = ros_value
+        interval=0
+
+        # draw from the distribution until a value larger than abs_refrac is found
+        while interval < abs_refrac:
+            interval = int(random.expovariate(lambd))
+        self.intervals.append((interval, neuron))
+        return interval
 
 
 class SpikeSourceNumNeurons(BasicSpikeSource):
@@ -273,42 +275,18 @@ class SpikeSinkConvolution(BasicSpikeSink):
         plt.show()
 
 
-class SpikeSinkConvolutionMultipleChannels(BasicSpikeSink):
-    """
-    Each spikes creates a spike response, which quickly increases and then slowly decreases.
-    Convolution / Summation of these functions produce a smoothed output value.
-    
-    The function chosen for the spike response here is f(x) = x*exp(2-x)
-
-    This class is the same as the SpikeSinkConvolution, but uses one output channel per neuron.
-    But there is still just one ros output, so the channels are combined to one output (Summation? Convolution?).
-
-    TODO complete
-    """
-    on_update_calling_rate = 10 # ms, defaults to 1 if undefined
-
-    f = lambda x: x*np.exp(2-x)
-    spike_response = [f(i) for i in np.arange(0, 6, 0.1)]
-    output = [[1 for i in range(len(spike_response))] for n in range(10)]  # TODO get n_neurons dynamically
-    ros_values = []
-
-    def on_spike(self, spike_time, neuron_id, curr_ros_value, n_neurons):
-        self.output[neuron_id] = np.convolve(self.output, self.spike_response, 'same')
-
-
-    def on_update(self, neurons, sim_time, curr_ros_value):
-        values = []
-        for neuron in neurons:
-            v, self.output[neuron.key] = self.output[neuron.key][0], np.append(self.output[neuron.key][1:], 1)  # FIFO
-            values.append(v)
-        new_ros_value = sum(values)
-        self.ros_values.append(new_ros_value)
-        return new_ros_value
 
 class SpikeSinkMultipleReadoutsConvolution(BasicSpikeSink):
+    '''
+    New spike sink class that computes the instantaneous firing rates (IFRs) of multiple output neurons. 
+
+
+
+    '''
     global f
     #f = lambda x: x*np.exp(2-x)
-    f = lambda x: x/20*np.exp(2-x/20)
+    alpha = 0.05                                       # the value of alpha determines the width of the time interval in which spike contribute to the IFRs
+    f = lambda x: x*alphan*np.exp(2-x*alpha) 
     conv_filter = [f(i) for i in np.arange(0, 6, 0.1)] # last 60 spikes
 
     #global last_spike_times
@@ -360,7 +338,7 @@ class SpikeSinkMultipleReadoutsConvolution(BasicSpikeSink):
         return new_ros_value
 
 
-    def on_update(self, neurons, sim_time, curr_ros_value):
+    def on_update(self, neurons, sim_time, curr_ros_value): # TODO
         return last_rate
 
 
